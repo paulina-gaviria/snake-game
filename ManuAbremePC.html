@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Manu juega snake</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Press Start 2P', cursive;
+            background: linear-gradient(45deg, #000000, #1a0033);
+            padding: 20px;
+        }
+        
+        h2 {
+            font-size: 2em;
+            margin: 10px 0;
+            color: #ff1493;
+            text-shadow: 2px 2px #000, 0 0 10px #ff1493;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1em;
+            margin: 10px 0;
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 2px 2px #000, 0 0 8px #00ffff;
+            letter-spacing: 1px;
+        }
+        
+        #gameCanvas {
+            border: 4px solid #ff1493;
+            background-color: rgba(0, 0, 0, 0.8);
+            margin: 10px 0;
+            box-shadow: 0 0 15px #ff1493;
+        }
+        
+        #scoreDisplay {
+            font-size: 1.4em;
+            margin: 10px 0;
+            color: #00ffff;
+            text-shadow: 2px 2px #000, 0 0 8px #00ffff;
+            letter-spacing: 1px;
+        }
+        
+        #invitation {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            padding: 25px;
+            background-color: rgba(0, 0, 0, 0.95);
+            border: 4px solid #ff1493;
+            border-radius: 10px;
+            animation: fadeIn 2s;
+            line-height: 1.8;
+            max-width: 80%;
+            width: 600px;
+            color: #fff;
+            box-shadow: 0 0 15px #ff1493;
+            z-index: 1000;
+        }
+        
+        #invitation h1 {
+            color: #ff1493;
+            text-shadow: 2px 2px #000, 0 0 10px #ff1493;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+        }
+        
+        #invitation p {
+            font-size: 0.9em;
+            margin: 15px 0;
+            text-shadow: 1px 1px #000;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <h2>MANU JUEGA SNAKE</h2>
+    <div class="subtitle">Te reto a que llegues a 3</div>
+    <div id="scoreDisplay">PUNTOS: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div id="invitation">
+        <h1>* ¡Felices 3 Años! *</h1>
+        <p>Me siento demasiado afortunada de poder celebrar estos tres años junto a ti. Miro atrás y han pasado tantas cosas, hemos crecido tanto juntos y lo mejor, siento que nos queda aún más camino por recorrer.</p>
+        <p>Pd. Prepara una maleta pequeña para el sábado y está pendiente de las siguientes instrucciones</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        
+        let snake = [{x: 200, y: 200}, {x: 190, y: 200}, {x: 180, y: 200}];
+        let food = {x: 0, y: 0};
+        let dx = 10;
+        let dy = 0;
+        let score = 0;
+        let gameSpeed = 100;
+        const gridSize = 10;
+        let gameInterval;
+        
+        function generateFood() {
+            food.x = Math.floor(Math.random() * (canvas.width/gridSize)) * gridSize;
+            food.y = Math.floor(Math.random() * (canvas.height/gridSize)) * gridSize;
+            
+            while(snake.some(segment => segment.x === food.x && segment.y === food.y)) {
+                food.x = Math.floor(Math.random() * (canvas.width/gridSize)) * gridSize;
+                food.y = Math.floor(Math.random() * (canvas.height/gridSize)) * gridSize;
+            }
+        }
+        
+        function drawSnake() {
+            snake.forEach(segment => {
+                ctx.fillStyle = '#ff1493';
+                ctx.strokeStyle = '#00ffff';
+                ctx.fillRect(segment.x, segment.y, gridSize-1, gridSize-1);
+                ctx.strokeRect(segment.x, segment.y, gridSize-1, gridSize-1);
+            });
+        }
+        
+        function drawFood() {
+            ctx.fillStyle = '#00ffff';
+            ctx.strokeStyle = '#ff1493';
+            ctx.fillRect(food.x, food.y, gridSize-1, gridSize-1);
+            ctx.strokeRect(food.x, food.y, gridSize-1, gridSize-1);
+        }
+        
+        function moveSnake() {
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+            snake.unshift(head);
+            
+            if(head.x === food.x && head.y === food.y) {
+                score += 1;
+                scoreElement.textContent = score;
+                generateFood();
+                if(score >= 3) {
+                    document.getElementById('invitation').style.display = 'block';
+                    clearInterval(gameInterval);
+                }
+            } else {
+                snake.pop();
+            }
+        }
+        
+        function checkCollision() {
+            const head = snake[0];
+            return (
+                head.x < 0 || 
+                head.x >= canvas.width ||
+                head.y < 0 || 
+                head.y >= canvas.height ||
+                snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
+            );
+        }
+        
+        function resetGame() {
+            snake = [{x: 200, y: 200}, {x: 190, y: 200}, {x: 180, y: 200}];
+            dx = 10;
+            dy = 0;
+            score = 0;
+            scoreElement.textContent = score;
+            document.getElementById('invitation').style.display = 'none';
+            generateFood();
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, gameSpeed);
+        }
+        
+        function gameLoop() {
+            if(checkCollision()) {
+                alert('¡Juego terminado! Intenta de nuevo');
+                resetGame();
+                return;
+            }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSnake();
+            drawFood();
+            moveSnake();
+        }
+        
+        // Prevent scrolling with arrow keys
+        window.addEventListener("keydown", function(e) {
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        });
+        
+        // Game controls
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case 'ArrowUp':
+                    if(dy === 0) {
+                        dx = 0;
+                        dy = -10;
+                    }
+                    break;
+                case 'ArrowDown':
+                    if(dy === 0) {
+                        dx = 0;
+                        dy = 10;
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if(dx === 0) {
+                        dx = -10;
+                        dy = 0;
+                    }
+                    break;
+                case 'ArrowRight':
+                    if(dx === 0) {
+                        dx = 10;
+                        dy = 0;
+                    }
+                    break;
+            }
+        });
+        
+        // Start the game
+        generateFood();
+        gameInterval = setInterval(gameLoop, gameSpeed);
+    </script>
+</body>
+</html> 
